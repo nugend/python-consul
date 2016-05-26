@@ -9,7 +9,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, returnValue, log
 from twisted.internet.error import ConnectError
 from twisted.internet.ssl import ClientContextFactory
-from twisted.web._newclient import ResponseNeverReceived
+from twisted.web._newclient import ResponseNeverReceived, RequestTransmissionFailed
 from twisted.web.client import Agent, HTTPConnectionPool, SSL
 
 from consul import base
@@ -213,7 +213,10 @@ class HTTPClient(object):
             # this exception is raised if the connection to the server is lost
             # when yielding a response, this could be due to network issues or
             # server restarts
-            raise ConsulException('Server connection lost')
+            raise ConsulException('Server connection lost: {} {}'.format(method.upper(), url))
+        except RequestTransmissionFailed:
+            # this exception is expected if the reactor is stopped mid request
+            raise ConsulException('Request incomplete: {} {}'.format(method.upper(), url))
 
     @inlineCallbacks
     def get(self, callback, path, params=None):
