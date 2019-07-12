@@ -293,15 +293,18 @@ class Consul(object):
         """
 
         # TODO: Status
-
+        use_ssl = os.getenv('CONSUL_HTTP_SSL')
         if os.getenv('CONSUL_HTTP_ADDR'):
             try:
-                host, port = os.getenv('CONSUL_HTTP_ADDR').split(':')
-            except ValueError:
+                consul_http_addr = os.getenv('CONSUL_HTTP_ADDR')
+                env_url = urllib.parse.urlparse(("" if 0 == consul_http_addr.find("//") else "//") + consul_http_addr)
+                host = env_url.hostname
+                port = env_url.port or 8500
+                use_ssl = env_url.scheme == 'https'
+            except:
                 raise ConsulException('CONSUL_HTTP_ADDR (%s) invalid, '
-                                      'does not match <host>:<port>'
-                                      % os.getenv('CONSUL_HTTP_ADDR'))
-        use_ssl = os.getenv('CONSUL_HTTP_SSL')
+                                      'could not be parsed into host and port'
+                                      % os.getenv('CONSUL_HTTP_ADDR')
         if use_ssl is not None:
             scheme = 'https' if use_ssl == 'true' else 'http'
         if os.getenv('CONSUL_HTTP_SSL_VERIFY') is not None:
